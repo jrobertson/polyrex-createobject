@@ -1,0 +1,90 @@
+#!/usr/bin/ruby
+
+# file: polyrex-createobject.rb
+
+require 'polyrex-schema'
+require 'backtrack-xpath'
+require 'rexml/document'
+
+class PolyrexCreateObject
+  include REXML
+
+  attr_accessor :id
+  
+  def initialize(schema)
+
+    @schema = schema
+    a = @schema.split('/')        
+
+    @rpaths = (a.length).times.inject({}) {|r| r.merge ({a.join('/').gsub(/\[[^\]]+\]/,'') => a.pop}) }
+    names = @rpaths.to_a[0..-2].map {|k,v| [v[/[^\[]+/], k]}
+
+    attach_create_handlers(names)
+
+  end
+
+  def record=(node)
+    @parent_node = node
+  end
+
+  def attach_create_handlers(names)
+    methodx = names[0..-2].map do |name, xpath|
+%Q(
+  def #{name}(params) 
+    records = XPath.first(@parent_node,'records')
+    create_node(records, @rpaths['#{xpath}'], params)
+    self
+  end
+)
+    end
+
+    name, xpath = names[-1]
+    
+    methodx << %Q(
+def #{name}(params)  
+  @parent_node = XPath.first(@doc.root,'records')
+  record = create_node(@parent_node, @rpaths['#{xpath}'], params)
+  self
+end
+)
+
+    self.instance_eval(methodx.join("\n"))
+    
+  end
+
+  def create_node(parent_node, child_schema, params)
+    raise "create_node error: can't create record" unless valid_creation?
+    record = Document.new PolyrexSchema.new(child_schema).to_s
+    @id = (@id.to_i + 1).to_s
+
+    record.root.add_attribute('id', @id)
+
+    a = child_schema[/[^\[]+(?=\])/].split(',')
+    a.each do |field_name|  
+      field = XPath.first(record.root, 'summary/' + field_name)
+      field.text = params[field_name.to_sym]
+    end
+
+    parent_node.add record    
+    record
+  end
+
+  def valid_creation?()
+
+    xpath = BacktrackXPath.new(@parent_node).to_s.gsub('//','/')
+    path = xpath_to_rpath(xpath).sub(/\/?records$/,'')
+    root_name = @schema[/^[^\/]+/]
+    rpath = root_name + (path.length > 0 ? '/' + path : path)
+
+    schema_rpath = @schema.gsub(/\[[^\]]+\]/,'') 
+    local_path = (schema_rpath.split('/') - rpath.split('/')).join('/')
+    child_rpath = rpath + '/' + local_path
+
+    @rpaths.has_key? child_rpath
+  end
+
+  def xpath_to_rpath(xpath)
+    xpath.split('/').each_slice(2).map(&:last).join('/').gsub(/\[[^\]]+\]/,'')
+  end
+
+end
