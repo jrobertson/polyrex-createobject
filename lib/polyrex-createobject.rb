@@ -42,7 +42,7 @@ class PolyrexCreateObject
     
     methodx << %Q(
 def #{name}(params)  
-  @parent_node = XPath.first(@doc.root,'records')
+  @parent_node = XPath.first(@parent_node.root,'records')
   record = create_node(@parent_node, @rpaths['#{xpath}'], params)
   self
 end
