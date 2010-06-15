@@ -3,7 +3,6 @@
 # file: polyrex-createobject.rb
 
 require 'polyrex-schema'
-require 'backtrack-xpath'
 require 'rexml/document'
 
 class PolyrexCreateObject
@@ -13,12 +12,13 @@ class PolyrexCreateObject
   
   def initialize(schema)
 
+    @id = 1
     @schema = schema
     a = @schema.split('/')        
 
     @rpaths = (a.length).times.inject({}) {|r| r.merge ({a.join('/').gsub(/\[[^\]]+\]/,'') => a.pop}) }
     names = @rpaths.to_a[0..-2].map {|k,v| [v[/[^\[]+/], k]}
-
+    
     attach_create_handlers(names)
 
   end
@@ -30,9 +30,10 @@ class PolyrexCreateObject
   def attach_create_handlers(names)
     methodx = names[0..-2].map do |name, xpath|
 %Q(
-  def #{name}(params) 
+  def #{name}(params={}, id=nil,&blk) 
     records = XPath.first(@parent_node,'records')
-    create_node(records, @rpaths['#{xpath}'], params)
+    self.record = create_node(records, @rpaths['#{xpath}'], params, id)    
+    blk.call(self) if blk
     self
   end
 )
@@ -41,9 +42,10 @@ class PolyrexCreateObject
     name, xpath = names[-1]
     
     methodx << %Q(
-def #{name}(params)  
-  @parent_node = XPath.first(@parent_node.root,'records')
-  record = create_node(@parent_node, @rpaths['#{xpath}'], params)
+def #{name}(params={}, id=nil,&blk)  
+  self.record = XPath.first(@parent_node.root,'records')
+  self.record = create_node(@parent_node, @rpaths['#{xpath}'], params, id)
+  blk.call(self) if blk
   self
 end
 )
@@ -52,36 +54,28 @@ end
     
   end
 
-  def create_node(parent_node, child_schema, params)
-    raise "create_node error: can't create record" unless valid_creation?
+  def create_node(parent_node, child_schema, params={}, id=nil)
+
     record = Document.new PolyrexSchema.new(child_schema).to_s
-    @id = (@id.to_i + 1).to_s
+    @id = id if id
 
-    record.root.add_attribute('id', @id)
-
+    record.root.add_attribute('id', @id.to_s)
+    if @id.to_s[/[0-9]/] then
+      @id = (@id.to_i + 1).to_s
+    else
+      @id = XPath.first(@parent_node.root, 'count(//@id)').to_i + 2
+    end
+    
     a = child_schema[/[^\[]+(?=\])/].split(',')
     a.each do |field_name|  
       field = XPath.first(record.root, 'summary/' + field_name)
       field.text = params[field_name.to_sym]
     end
 
-    parent_node.add record    
-    record
+    parent_node.add record.root
+
   end
 
-  def valid_creation?()
-
-    xpath = BacktrackXPath.new(@parent_node).to_s.gsub('//','/')
-    path = xpath_to_rpath(xpath).sub(/\/?records$/,'')
-    root_name = @schema[/^[^\/]+/]
-    rpath = root_name + (path.length > 0 ? '/' + path : path)
-
-    schema_rpath = @schema.gsub(/\[[^\]]+\]/,'') 
-    local_path = (schema_rpath.split('/') - rpath.split('/')).join('/')
-    child_rpath = rpath + '/' + local_path
-
-    @rpaths.has_key? child_rpath
-  end
 
   def xpath_to_rpath(xpath)
     xpath.split('/').each_slice(2).map(&:last).join('/').gsub(/\[[^\]]+\]/,'')
