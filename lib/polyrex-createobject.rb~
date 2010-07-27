@@ -10,9 +10,9 @@ class PolyrexCreateObject
 
   attr_accessor :id
   
-  def initialize(schema, id)
+  def initialize(schema, id='1')
     @id = id
-    @id ||= 1
+
     @schema = schema
     a = @schema.split('/')        
 
@@ -60,8 +60,8 @@ end
     @id = id if id
 
     record.root.add_attribute('id', @id.to_s)
-    if @id.to_s[/[0-9]/] then
-      @id = (@id.to_i + 1).to_s
+    if @id[/[0-9]/] then
+      @id.succ!
     else
       @id = XPath.first(@parent_node.root, 'count(//@id)').to_i + 2
     end
