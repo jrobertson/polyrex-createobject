@@ -10,9 +10,9 @@ class PolyrexCreateObject
 
   attr_accessor :id
   
-  def initialize(schema)
-
-    @id = 1
+  def initialize(schema, id=nil)
+    @id = id
+    @id ||= 1
     @schema = schema
     a = @schema.split('/')        
 

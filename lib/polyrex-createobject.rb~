@@ -10,8 +10,9 @@ class PolyrexCreateObject
 
   attr_accessor :id
   
-  def initialize(schema)
-
+  def initialize(schema, id)
+    @id = id
+    @id ||= 1
     @schema = schema
     a = @schema.split('/')        
 
@@ -29,9 +30,10 @@ class PolyrexCreateObject
   def attach_create_handlers(names)
     methodx = names[0..-2].map do |name, xpath|
 %Q(
-  def #{name}(params={}, id=nil) 
+  def #{name}(params={}, id=nil,&blk) 
     records = XPath.first(@parent_node,'records')
-    create_node(records, @rpaths['#{xpath}'], params, id)
+    self.record = create_node(records, @rpaths['#{xpath}'], params, id)    
+    blk.call(self) if blk
     self
   end
 )
@@ -40,9 +42,10 @@ class PolyrexCreateObject
     name, xpath = names[-1]
     
     methodx << %Q(
-def #{name}(params={}, id=nil)  
-  @parent_node = XPath.first(@parent_node.root,'records')
-  record = create_node(@parent_node, @rpaths['#{xpath}'], params, id)
+def #{name}(params={}, id=nil,&blk)  
+  self.record = XPath.first(@parent_node.root,'records')
+  self.record = create_node(@parent_node, @rpaths['#{xpath}'], params, id)
+  blk.call(self) if blk
   self
 end
 )
@@ -70,7 +73,7 @@ end
     end
 
     parent_node.add record.root
-    record.root
+
   end
 
 
