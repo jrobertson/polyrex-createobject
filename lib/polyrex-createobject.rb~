@@ -32,7 +32,7 @@ class PolyrexCreateObject
 %Q(
   def #{name}(params={}, id=nil,&blk) 
     records = XPath.first(@parent_node,'records')
-    self.record = create_node(records, @rpaths['#{xpath}'], params, id)    
+    create_node(records, @rpaths['#{xpath}'], params, id)    
     blk.call(self) if blk
     self
   end
@@ -60,7 +60,7 @@ end
     @id = id if id
 
     record.root.add_attribute('id', @id.to_s)
-    if @id[/[0-9]/] then
+    if @id.to_s[/[0-9]/] then
       @id.succ!
     else
       @id = XPath.first(@parent_node.root, 'count(//@id)').to_i + 2

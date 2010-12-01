@@ -3,12 +3,11 @@
 # file: polyrex-createobject.rb
 
 require 'polyrex-schema'
-require 'rexml/document'
+require 'rexle'
 
 class PolyrexCreateObject
-  include REXML
 
-  attr_accessor :id
+  attr_accessor :id, :parent_node
   
   def initialize(schema, id='1')
     @id = id
@@ -29,10 +28,11 @@ class PolyrexCreateObject
 
   def attach_create_handlers(names)
     methodx = names[0..-2].map do |name, xpath|
+
 %Q(
   def #{name}(params={}, id=nil,&blk) 
-    records = XPath.first(@parent_node,'records')
-    self.record = create_node(records, @rpaths['#{xpath}'], params, id)    
+    self.record = @parent_node.element('records')
+    self.record = create_node(@parent_node, @rpaths['#{xpath}'], params, id)    
     blk.call(self) if blk
     self
   end
@@ -42,8 +42,8 @@ class PolyrexCreateObject
     name, xpath = names[-1]
     
     methodx << %Q(
-def #{name}(params={}, id=nil,&blk)  
-  self.record = XPath.first(@parent_node.root,'records')
+def #{name}(params={}, id=nil,&blk)
+  self.record = @parent_node.element('records')
   self.record = create_node(@parent_node, @rpaths['#{xpath}'], params, id)
   blk.call(self) if blk
   self
@@ -56,19 +56,19 @@ end
 
   def create_node(parent_node, child_schema, params={}, id=nil)
 
-    record = Document.new PolyrexSchema.new(child_schema).to_s
+    record = Rexle.new PolyrexSchema.new(child_schema).to_s
     @id = id if id
 
-    record.root.add_attribute('id', @id.to_s)
-    if @id[/[0-9]/] then
+    record.root.add_attribute({'id' => @id.to_s.clone})
+    if @id.to_s[/[0-9]/] then
       @id.succ!
     else
-      @id = XPath.first(@parent_node.root, 'count(//@id)').to_i + 2
+      @id = @parent_node.element('count(//@id)').to_i + 2
     end
     
     a = child_schema[/[^\[]+(?=\])/].split(',')
     a.each do |field_name|  
-      field = XPath.first(record.root, 'summary/' + field_name)
+      field = record.element('summary/' + field_name)
       field.text = params[field_name.to_sym]
     end
 
