@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = 'polyrex-createobject'
-  s.version = '0.3.6'
+  s.version = '0.3.7'
   s.summary = 'polyrex-createobject'
   s.files = Dir['lib/**/*.rb']
   s.add_dependency('backtrack-xpath')

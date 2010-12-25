@@ -31,9 +31,10 @@ class PolyrexCreateObject
 
 %Q(
   def #{name}(params={}, id=nil,&blk) 
-    self.record = @parent_node.element('records')
-    self.record = create_node(@parent_node, @rpaths['#{xpath}'], params, id)    
-    blk.call(self) if blk
+
+    create_node(@parent_node, @rpaths['#{xpath}'], params, id).element('records')
+    blk.call(self) if block_given?
+
     self
   end
 )
@@ -43,9 +44,10 @@ class PolyrexCreateObject
     
     methodx << %Q(
 def #{name}(params={}, id=nil,&blk)
-  self.record = @parent_node.element('records')
-  self.record = create_node(@parent_node, @rpaths['#{xpath}'], params, id)
-  blk.call(self) if blk
+  self.record = @parent_node.element('records') unless @parent_node.name == 'records'
+  self.record = create_node(@parent_node, @rpaths['#{xpath}'], params, id).element('records')        
+  blk.call(self) if block_given?
+
   self
 end
 )
@@ -55,7 +57,6 @@ end
   end
 
   def create_node(parent_node, child_schema, params={}, id=nil)
-
     record = Rexle.new PolyrexSchema.new(child_schema).to_s
     @id = id if id
 
