@@ -61,12 +61,12 @@ end
     @id = id if id
 
     record.root.add_attribute({'id' => @id.to_s.clone})
-    if @id.to_s[/[0-9]/] then
-      @id.succ!
+    if @id.to_i.to_s == @id.to_s then
+      @id = @id.to_s.succ
     else
       @id = @parent_node.element('count(//@id)').to_i + 2
     end
-    
+
     a = child_schema[/[^\[]+(?=\])/].split(',')
     a.each do |field_name|  
       field = record.element('summary/' + field_name)
