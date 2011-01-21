@@ -62,7 +62,7 @@ end
 
     record.root.add_attribute({'id' => @id.to_s.clone})
     if @id.to_i.to_s == @id.to_s then
-      @id.succ!
+      @id = @id.to_s.succ
     else
       @id = @parent_node.element('count(//@id)').to_i + 2
     end

@@ -69,7 +69,7 @@ end
 
     a = child_schema[/[^\[]+(?=\])/].split(',')
     a.each do |field_name|  
-      field = record.element('summary/' + field_name)
+      field = record.element('summary/' + field_name.strip)
       field.text = params[field_name.to_sym]
     end
 
