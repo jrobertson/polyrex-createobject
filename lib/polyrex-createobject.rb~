@@ -32,8 +32,13 @@ class PolyrexCreateObject
 %Q(
   def #{name}(params={}, id=nil,&blk) 
 
-    create_node(@parent_node, @rpaths['#{xpath}'], params, id).element('records')
-    blk.call(self) if block_given?
+    orig_parent = @parent_node
+    new_parent = create_node(@parent_node, @rpaths['#{xpath}'], params, id).element('records')
+    if block_given? then
+      self.record = new_parent
+      blk.call(self) 
+    end
+    self.record = orig_parent
 
     self
   end
@@ -60,17 +65,19 @@ end
     record = Rexle.new PolyrexSchema.new(child_schema).to_s
     @id = id if id
 
-    record.root.add_attribute({'id' => @id.to_s.clone})
     if @id.to_i.to_s == @id.to_s then
       @id = @id.to_s.succ
     else
       @id = @parent_node.element('count(//@id)').to_i + 2
     end
 
+    record.root.add_attribute({'id' => @id.to_s.clone})
+
     a = child_schema[/[^\[]+(?=\])/].split(',')
+    summary = record.element('summary')
     a.each do |field_name|  
-      field = record.element('summary/' + field_name)
-      field.text = params[field_name.to_sym]
+      field = summary.element(field_name.strip)
+      field.text = params[field_name.strip.to_sym]
     end
 
     parent_node.add record.root
