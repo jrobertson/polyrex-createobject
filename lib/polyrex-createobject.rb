@@ -29,15 +29,18 @@ class PolyrexCreateObject
   def attach_create_handlers(names)
     methodx = names[0..-2].map do |name, xpath|
 
+# nested records
 %Q(
   def #{name}(params={}, id=nil,&blk) 
 
     orig_parent = @parent_node
     new_parent = create_node(@parent_node, @rpaths['#{xpath}'], params, id).element('records')
+
     if block_given? then
       self.record = new_parent
       blk.call(self) 
     end
+
     self.record = orig_parent
 
     self
@@ -46,12 +49,15 @@ class PolyrexCreateObject
     end
 
     name, xpath = names[-1]
-    
+
+# top record    
     methodx << %Q(
 def #{name}(params={}, id=nil,&blk)
+  orig_parent = @parent_node
   self.record = @parent_node.element('records') unless @parent_node.name == 'records'
   self.record = create_node(@parent_node, @rpaths['#{xpath}'], params, id).element('records')        
   blk.call(self) if block_given?
+  self.record = orig_parent
 
   self
 end
