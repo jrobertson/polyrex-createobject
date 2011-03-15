@@ -7,10 +7,10 @@ require 'rexle'
 
 class PolyrexCreateObject
 
-  attr_accessor :id, :parent_node
+  attr_accessor :parent_node
   
   def initialize(schema, id='1')
-    @id = id
+    @@id = id
 
     @schema = schema
     a = @schema.split('/')        
@@ -21,7 +21,10 @@ class PolyrexCreateObject
     attach_create_handlers(names)
 
   end
-
+  
+  def id=(s)  @@id = s  end
+  def id() @@id end
+  
   def record=(node)
     @parent_node = node
   end
@@ -33,6 +36,7 @@ class PolyrexCreateObject
 %Q(
   def #{name}(params={}, id=nil,&blk) 
 
+    id ||= @@id
     orig_parent = @parent_node
     new_parent = create_node(@parent_node, @rpaths['#{xpath}'], params, id).element('records')
 
@@ -53,6 +57,7 @@ class PolyrexCreateObject
 # top record    
     methodx << %Q(
 def #{name}(params={}, id=nil,&blk)
+  id ||= @@id
   orig_parent = @parent_node
   self.record = @parent_node.element('records') unless @parent_node.name == 'records'
   self.record = create_node(@parent_node, @rpaths['#{xpath}'], params, id).element('records')        
@@ -72,16 +77,16 @@ end
     record = Rexle.new PolyrexSchema.new(child_schema).to_s
 
     if id then
-      @id = id 
+      @@id = id 
     else
-      if @id.to_i.to_s == @id.to_s then
-        @id = @id.to_s.succ
+      if @@id.to_i.to_s == @@id.to_s then
+        @@id = @id.to_s.succ
       else
-        @id = @parent_node.element('count(//@id)').to_i + 2
+        @@id = @parent_node.element('count(//@id)').to_i + 2
       end
     end
 
-    record.root.add_attribute({'id' => @id.to_s.clone})
+    record.root.add_attribute({'id' => @@id.to_s.clone})
 
     a = child_schema[/[^\[]+(?=\])/].split(',')
     summary = record.element('summary')
