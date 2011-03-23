@@ -22,7 +22,7 @@ class PolyrexCreateObject
 
   end
   
-  def id=(s)  @@id = s  end
+  def id=(s)  @@id = s; self end
   def id() @@id end
   
   def record=(node)
@@ -77,10 +77,10 @@ end
     record = Rexle.new PolyrexSchema.new(child_schema).to_s
 
     if id then
-      @@id = id 
+      @@id.succ!
     else
       if @@id.to_i.to_s == @@id.to_s then
-        @@id = @id.to_s.succ
+        @@id.succ!
       else
         @@id = @parent_node.element('count(//@id)').to_i + 2
       end
