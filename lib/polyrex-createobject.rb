@@ -89,7 +89,7 @@ end
     record.root.add_attribute({'id' => @@id.to_s.clone})
 
     a = child_schema[/[^\[]+(?=\])/].split(',')
-    summary = record.element('summary')
+    summary = record.root.element('summary')
     a.each do |field_name|  
       field = summary.element(field_name.strip)
       field.text = params[field_name.strip.to_sym]
