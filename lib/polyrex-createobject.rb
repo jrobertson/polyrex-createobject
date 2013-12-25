@@ -1,9 +1,10 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
 
 # file: polyrex-createobject.rb
 
 require 'polyrex-schema'
 require 'rexle'
+
 
 class PolyrexCreateObject
 
@@ -13,13 +14,21 @@ class PolyrexCreateObject
     @@id = id
 
     @schema = schema
-    a = @schema.split('/')        
 
-    @rpaths = (a.length).times.inject({}) {|r| r.merge ({a.join('/').gsub(/\[[^\]]+\]/,'') => a.pop}) }
-    names = @rpaths.to_a[0..-2].map {|k,v| [v[/[^\[]+/], k]}
-    
-    attach_create_handlers(names)
+    if @schema then
+      a = @schema.split('/')        
+      @rpaths = (a.length).times.inject({}) {|r| r.merge ({a.join('/').gsub(/\[[^\]]+\]/,'') => a.pop}) }
 
+      values = @rpaths.values.reverse
+
+      @rpaths.keys.reverse.each.with_index do |key,i |
+        @rpaths[key] = values[i..-1].join('/')
+      end
+
+      names = @rpaths.to_a[0..-2].map {|k,v| [v[/[^\[]+/], k]}
+      
+      attach_create_handlers(names)
+    end
   end
   
   def id=(s)  @@id = s; self end
@@ -74,7 +83,10 @@ end
 
   def create_node(parent_node, child_schema, params={}, id=nil)
 
+    #puts 'create_node... child_schema : ' + child_schema
     record = Rexle.new PolyrexSchema.new(child_schema).to_s
+    
+    #puts '@parent_node class: %s; xml: %s : ' % [@parent_node.class, @parent_node.xml]
 
     if id then
       @@id.succ!
@@ -89,6 +101,7 @@ end
     record.root.add_attribute({'id' => @@id.to_s.clone})
 
     a = child_schema[/[^\[]+(?=\])/].split(',')
+    #puts 'record : ' + record.xml
     summary = record.root.element('summary')
     a.each do |field_name|  
       field = summary.element(field_name.strip)
