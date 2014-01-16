@@ -17,7 +17,9 @@ class PolyrexCreateObject
 
     if @schema then
       a = @schema.split('/')        
-      @rpaths = (a.length).times.inject({}) {|r| r.merge ({a.join('/').gsub(/\[[^\]]+\]/,'') => a.pop}) }
+      @rpaths = (a.length).times.inject({}) do |r| 
+        r.merge ({a.join('/').gsub(/\[[^\]]+\]/,'') => a.pop}) 
+      end
 
       values = @rpaths.values.reverse
 
@@ -83,10 +85,9 @@ end
 
   def create_node(parent_node, child_schema, params={}, id=nil)
 
-    #puts 'create_node... child_schema : ' + child_schema
-    record = Rexle.new PolyrexSchema.new(child_schema).to_s
-    
-    #puts '@parent_node class: %s; xml: %s : ' % [@parent_node.class, @parent_node.xml]
+
+    buffer = PolyrexSchema.new(child_schema[/^[^\/]+/]).to_s
+    record = Rexle.new buffer     
 
     if id then
       @@id.succ!
@@ -101,7 +102,7 @@ end
     record.root.add_attribute({'id' => @@id.to_s.clone})
 
     a = child_schema[/[^\[]+(?=\])/].split(',')
-    #puts 'record : ' + record.xml
+
     summary = record.root.element('summary')
     a.each do |field_name|  
       field = summary.element(field_name.strip)
