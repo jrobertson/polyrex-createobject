@@ -21,7 +21,7 @@ class PolyrexCreateObject
 
     @schema = schema[/\/.*$/][1..-1]
     a = PolyrexSchema.new(schema).to_a
-    @obj = attach_create_handlers(a)
+    @obj = attach_create_handlers(a[0])
 
     @obj.class_eval do 
       def record=(node)
