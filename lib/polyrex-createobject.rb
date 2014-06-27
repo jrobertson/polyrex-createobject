@@ -29,7 +29,7 @@ class PolyrexCreateObject
       end
     end
 
-    self.instance_eval " def #{@obj.name.downcase}(h, id=@@id, &blk)
+    self.instance_eval " def #{@obj.name.downcase}(h={}, id=@@id, &blk)
 
       new_parent = create_node(@parent_node, @schema, h, id).element('records')
 
@@ -86,12 +86,14 @@ class PolyrexCreateObject
 
     record.root.add_attribute({'id' => @@id.to_s.clone})
 
-    a = child_schema[/[^\[]+(?=\])/].split(',')
+    if params.length > 0 then
+      a = child_schema[/[^\[]+(?=\])/].split(',')
 
-    summary = record.root.element('summary')
-    a.each do |field_name|  
-      field = summary.element(field_name.strip)
-      field.text = params[field_name.strip.to_sym]
+      summary = record.root.element('summary')
+      a.each do |field_name|  
+        field = summary.element(field_name.strip)
+        field.text = params[field_name.strip.to_sym]
+      end
     end
 
     parent_node.add record.root
