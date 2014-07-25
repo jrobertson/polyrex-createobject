@@ -13,7 +13,7 @@ class PolyrexCreateObject
   attr_reader :obj
 
 
-  def initialize(schema, id='1')
+  def initialize(schema, id: '1')
 
     @@id = id
 
@@ -33,7 +33,7 @@ class PolyrexCreateObject
 
       new_parent = create_node(@parent_node, @schema, h, id).element('records')
 
-      obj = @obj.new
+      obj = @obj.new 
       obj.record = new_parent
       obj.instance_variable_set(:@schema, @schema[/\\/(.*$)/,1])
       
@@ -126,7 +126,6 @@ class PolyrexCreateObject
 
         buffer = PolyrexSchema.new(child_schema[/^[^\/]+/]).to_s
         record = Rexle.new buffer     
-
         if id then
           @@id.succ!
         else
@@ -146,8 +145,8 @@ class PolyrexCreateObject
           field = summary.element(field_name.strip)
           field.text = params[field_name.strip.to_sym]
         end
-
         parent_node.add record.root
+
 
       end # end of define_method :create_node
 
@@ -158,8 +157,7 @@ class PolyrexCreateObject
         new_parent = create_node(@parent_node, local_schema, h, id)\
                                                             .element('records')
         
-        obj = klass.new
-
+        obj = klass.new 
         def obj.record=(node)
           @parent_node = node
         end
