@@ -71,8 +71,10 @@ class PolyrexCreateObject
 
   def create_node(parent_node, child_schema, params={}, id=nil)
 
-    buffer = PolyrexSchema.new(child_schema[/^[^\/]+/]).to_s
-    record = Rexle.new buffer     
+    #buffer = PolyrexSchema.new(child_schema[/^[^\/]+/]).to_s
+    record = PolyrexSchema.new(child_schema).to_doc
+    record.root.xpath('records/.').each(&:delete)
+    #record = Rexle.new buffer     
 
     if id then
       @@id.succ!
@@ -108,6 +110,7 @@ class PolyrexCreateObject
     r = []
 
     fields = []
+
     fields << args.shift while args.first.is_a? Symbol
 
     class_name = cname.capitalize
@@ -123,9 +126,9 @@ class PolyrexCreateObject
 
       define_method :create_node do |parent_node, child_schema, 
                                                             params={}, id=nil|
-
-        buffer = PolyrexSchema.new(child_schema[/^[^\/]+/]).to_s
-        record = Rexle.new buffer     
+        record = PolyrexSchema.new(child_schema).to_doc
+        record.root.xpath('records/.').each(&:delete)
+     
         if id then
           @@id.succ!
         else
@@ -153,7 +156,13 @@ class PolyrexCreateObject
       define_method cname do |h, id=nil, &blk|
 
         id ||= @@id
-        local_schema = "%s[%s]" % [cname, fields.join(',')]        
+
+        local_schema = @parent_node.parent.text('summary/schema')[/\/(.*$)/,1]
+        if local_schema[0] == '{' then
+
+          local_schema = "%s[%s]%s" % [cname, fields.join(','), 
+                                                  local_schema[/\/.*$/].to_s]            
+        end
         new_parent = create_node(@parent_node, local_schema, h, id)\
                                                             .element('records')
         
@@ -193,8 +202,7 @@ class PolyrexCreateObject
             define_method remaining.name.downcase.to_sym do |h, id=nil, &blk|
 
               id ||= @@id
-              local_schema = "%s[%s]" % [record, fields.join(',')]
-
+              local_schema = @parent_node.parent.text('summary/schema')[/\/(.*$)/,1]
               new_parent = create_node(@parent_node, local_schema, 
                                                  params, id).element('records')
               obj = remaining.new

@@ -21,30 +21,41 @@ class PolyrexCreateObject
 
     @schema = schema[/\/.*$/][1..-1]
     a = PolyrexSchema.new(schema).to_a
-    @obj = attach_create_handlers(a[0])
 
-    @obj.class_eval do 
-      def record=(node)
-        @parent_node = node
+    a.each do |rec|
+
+      @obj = attach_create_handlers(rec)
+
+      @obj.class_eval do 
+        def record=(node)
+          @parent_node = node
+        end
       end
-    end
 
-    self.instance_eval " def #{@obj.name.downcase}(h={}, id=@@id, &blk)
+      self.instance_eval %Q( def #{@obj.name.downcase}(h={}, id=@@id, &blk)
 
-      new_parent = create_node(@parent_node, @schema, h, id).element('records')
+        local_schema = @schema
 
-      obj = @obj.new 
-      obj.record = new_parent
-      obj.instance_variable_set(:@schema, @schema[/\\/(.*$)/,1])
-      
-      if block_given? then
-        blk.call obj
-      else
-        obj
+        if local_schema[0] == '{' then
+          fields = @schema[/#{obj.name.downcase}\\[([^\\]]+)/,1].split(/\\s*,\\s*/)
+          local_schema = "%s[%s]%s" % ['#{@obj.name.downcase}', fields.join(','), 
+                                                  local_schema[/\\/.*$/].to_s]            
+        end
+
+        new_parent = create_node(@parent_node, local_schema, h, id).element('records')
+
+        obj = @obj.new 
+        obj.record = new_parent
+        obj.instance_variable_set(:@schema, @schema[/\\/(.*$)/,1])
+        
+        if block_given? then
+          blk.call obj
+        else
+          obj
+        end
       end
+      )
     end
-    "    
-
   end
   
   def id=(s)  @@id = s; self end
@@ -71,10 +82,8 @@ class PolyrexCreateObject
 
   def create_node(parent_node, child_schema, params={}, id=nil)
 
-    #buffer = PolyrexSchema.new(child_schema[/^[^\/]+/]).to_s
     record = PolyrexSchema.new(child_schema).to_doc
     record.root.xpath('records/.').each(&:delete)
-    #record = Rexle.new buffer     
 
     if id then
       @@id.succ!
@@ -173,7 +182,7 @@ class PolyrexCreateObject
 
 
         obj.record = new_parent
-        #if block_given? then
+
         if blk then
           blk.call obj  
         else
@@ -203,6 +212,11 @@ class PolyrexCreateObject
 
               id ||= @@id
               local_schema = @parent_node.parent.text('summary/schema')[/\/(.*$)/,1]
+              if local_schema[0] == '{' then
+
+                local_schema = "%s[%s]%s" % [cname, fields.join(','), 
+                                                        local_schema[/\/.*$/].to_s]            
+              end
               new_parent = create_node(@parent_node, local_schema, 
                                                  params, id).element('records')
               obj = remaining.new
