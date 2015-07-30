@@ -135,7 +135,9 @@ class PolyrexCreateObject
 
       define_method :create_node do |parent_node, child_schema, 
                                                             params={}, id=nil|
+        
         record = PolyrexSchema.new(child_schema).to_doc
+        #puts 'record : ' + record.xml(pretty: true)
         record.root.xpath('records/.').each(&:delete)
      
         if id then
@@ -153,6 +155,7 @@ class PolyrexCreateObject
         a = child_schema[/[^\[]+(?=\])/].split(',')
 
         summary = record.root.element('summary')
+
         a.each do |field_name|  
           field = summary.element(field_name.strip)
           field.text = params[field_name.strip.to_sym]
@@ -168,10 +171,12 @@ class PolyrexCreateObject
         id ||= @@id
 
         local_schema = @parent_node.parent.text('summary/schema')[/\/(.*$)/,1]
+
         if local_schema[0] == '{' then
 
           local_schema = "%s[%s]%s" % [cname, fields.join(','), 
-                                                  local_schema[/\/.*$/].to_s]            
+                                                  local_schema[/\/[^;]+/].to_s]            
+
         end
         new_parent = create_node(@parent_node, local_schema, h, id)\
                                                             .element('records')

@@ -157,6 +157,7 @@ class PolyrexCreateObject
           field = summary.element(field_name.strip)
           field.text = params[field_name.strip.to_sym]
         end
+
         parent_node.add record.root
 
 
