@@ -19,9 +19,11 @@ class PolyrexCreateObject
 
     raise "missing schema" unless schema
 
-    @schema = schema[/\/.*$/][1..-1]
-    a = PolyrexSchema.new(schema).to_a
+    #jr020516 @schema = schema[/\/.*$/][1..-1]
+    @schema = schema[/\/(.*)$/,1]
 
+    a = PolyrexSchema.new(schema).to_a
+        
     a.each do |rec|
 
       @obj = attach_create_handlers(rec)
@@ -83,7 +85,7 @@ class PolyrexCreateObject
   def create_node(parent_node, child_schema, params={}, id=nil)
 
     record = PolyrexSchema.new(child_schema).to_doc
-    record.root.xpath('records/.').each(&:delete)
+    record.root.xpath('records/*').each(&:delete)
 
     if id then
       @@id.succ!
@@ -137,8 +139,7 @@ class PolyrexCreateObject
                                                             params={}, id=nil|
         
         record = PolyrexSchema.new(child_schema).to_doc
-        #puts 'record : ' + record.xml(pretty: true)
-        record.root.xpath('records/.').each(&:delete)
+        record.root.xpath('records/*').each(&:delete)
      
         if id then
           @@id.succ!

@@ -1,10 +1,10 @@
 Gem::Specification.new do |s|
   s.name = 'polyrex-createobject'
-  s.version = '0.5.8'
+  s.version = '0.6.0'
   s.summary = 'polyrex-createobject'
   s.authors = ['James Robertson']
-  s.files = Dir['lib/**/*.rb']
-  s.add_runtime_dependency('polyrex-schema', '~> 0.1', '>=0.1.17') 
+  s.files = Dir['lib/polyrex-createobject.rb']
+  s.add_runtime_dependency('polyrex-schema', '~> 0.4', '>=0.4.2') 
   s.signing_key = '../privatekeys/polyrex-createobject.pem'
   s.cert_chain  = ['gem-public_cert.pem']
   s.license = 'MIT'
