@@ -13,13 +13,12 @@ class PolyrexCreateObject
   attr_reader :obj
 
 
-  def initialize(schema, id: '1')
+  def initialize(schema, id: '1', order: 'ascending')
 
-    @@id = id
+    @@id, @order = id, order.to_s
 
     raise "missing schema" unless schema
 
-    #jr020516 @schema = schema[/\/.*$/][1..-1]
     @schema = schema[/\/(.*)$/,1]
 
     a = PolyrexSchema.new(schema).to_a
@@ -109,7 +108,8 @@ class PolyrexCreateObject
       end
     end
 
-    parent_node.add record.root
+    method_name = @order == 'ascending' ? :add : :prepend
+    parent_node.method(method_name).call record.root
 
   end
 
