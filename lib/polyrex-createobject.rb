@@ -13,27 +13,40 @@ class PolyrexCreateObject
   attr_reader :obj
 
 
-  def initialize(schema, id: '1', order: 'ascending')
+  def initialize(schema=nil, id: nil, order: 'ascending', record: nil,
+                 debug: false)
 
-    @@id, @order = id, order.to_s
+    @order = order.to_s
+    @id = id
 
+    if @debug then
+      puts 'inside PolyrexCreateObject: record: ' + record.xml.inspect
+      puts 'record.text' + record.text('summary/schema')
+    end
+    
+    @parent_node = record ? record.element('records') : record
+    schema = record.text('summary/schema')
+    puts ': schema: ' + schema.inspect if @debug
     raise "missing schema" unless schema
 
-    @schema = schema[/\/(.*)$/,1]
 
+    @schema = schema =~ /\// ? schema[/\/(.*)$/,1] : schema
+    
     a = PolyrexSchema.new(schema).to_a
-        
+    puts 'a: ' + a.inspect if @debug
+    
     a.each do |rec|
 
       @obj = attach_create_handlers(rec)
-
+      puts '@obj: ' + @obj.inspect if @debug
+      
       @obj.class_eval do 
         def record=(node)
           @parent_node = node
         end
       end
 
-      self.instance_eval %Q( def #{@obj.name.downcase}(h={}, id=@@id, &blk)
+      self.instance_eval %Q( def #{@obj.name.downcase}(h={}, id=@id, &blk)
 
         local_schema = @schema
 
@@ -43,24 +56,20 @@ class PolyrexCreateObject
                                                   local_schema[/\\/.*$/].to_s]            
         end
 
-        new_parent = create_node(@parent_node, local_schema, h, id).element('records')
-
-        obj = @obj.new 
-        obj.record = new_parent
-        obj.instance_variable_set(:@schema, @schema[/\\/(.*$)/,1])
+        new_parent = create_node(@parent_node, local_schema, h, id)
         
         if block_given? then
-          blk.call obj
+          yield(PolyrexCreateObject.new(id: id, record: new_parent))
         else
-          obj
+          self
         end
       end
       )
     end
   end
   
-  def id=(s)  @@id = s; self end
-  def id() @@id end
+  def id=(s)  @id = s; self end
+  def id() @id end
   
   def record=(node)
     @parent_node = node
@@ -87,16 +96,16 @@ class PolyrexCreateObject
     record.root.xpath('records/*').each(&:delete)
 
     if id then
-      @@id.succ!
+      @id.succ!
     else
-      if @@id.to_i.to_s == @@id.to_s then
-        @@id.succ!
+      if @id.to_i.to_s == @id.to_s then
+        @id.succ!
       else
-        @@id = @parent_node.element('count(//@id)').to_i + 2
+        @id = @parent_node.element('count(//@id)').to_i + 2
       end
     end
 
-    record.root.add_attribute({'id' => @@id.to_s.clone})
+    record.root.add_attribute({'id' => @id.to_s.clone})
 
     if params.length > 0 then
       a = child_schema[/[^\[]+(?=\])/].split(',')
@@ -142,12 +151,12 @@ class PolyrexCreateObject
         record.root.xpath('records/*').each(&:delete)
      
         if id then
-          @@id.succ!
+          @id.succ!
         else
-          if @@id.to_i.to_s == @@id.to_s then
-            @@id.succ!
+          if @id.to_i.to_s == @id.to_s then
+            @id.succ!
           else
-            @@id = @parent_node.element('count(//@id)').to_i + 2
+            @id = @parent_node.element('count(//@id)').to_i + 1
           end
         end
 
@@ -169,7 +178,7 @@ class PolyrexCreateObject
 
       define_method cname do |h, id=nil, &blk|
 
-        id ||= @@id
+        id ||= @id
 
         local_schema = @parent_node.parent.text('summary/schema')[/\/(.*$)/,1]
 
@@ -217,7 +226,7 @@ class PolyrexCreateObject
 
             define_method remaining.name.downcase.to_sym do |h, id=nil, &blk|
 
-              id ||= @@id
+              id ||= @id
               local_schema = @parent_node.parent.text('summary/schema')[/\/(.*$)/,1]
               if local_schema[0] == '{' then
 
