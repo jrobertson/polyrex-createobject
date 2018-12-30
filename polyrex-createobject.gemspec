@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = 'polyrex-createobject'
-  s.version = '0.7.0'
+  s.version = '0.8.0'
   s.summary = 'polyrex-createobject'
   s.authors = ['James Robertson']
   s.files = Dir['lib/polyrex-createobject.rb']
